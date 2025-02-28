@@ -1,7 +1,7 @@
 const CONFIG = {
     // Google Sheets configuration
     SHEET_ID: '1ttJPKVBugC6DdwZRBv-jeZcZneLkeAZBH9G0zWELywA', // Replace with your actual Sheet ID
-    WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbyHNuk_6aW3XPfIWRVZEIUMjMcx-I82h2l0tNy3phgM0EqmusDsNEp0CGVcLJ_a2w/exec', // Replace with your actual Web App URL
+    WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbzdCFPfVtvXnZTtOw1Qa9X9yB7TT_Wpv46m3RmBNxlAt_ERDl5W17btBuDdMX2Zi2A/exec', // Replace with your actual Web App URL
     SHEET_NAME: 'Menu Items',
     
     // Menu categories

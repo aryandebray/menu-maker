@@ -60,7 +60,10 @@ function generateAllQRCodes() {
       sheet.getRange(row, qrColumn + 1).setValue(timestamp);
     }
     
-    sendMenuUpdateEmail();
+    // Send email with menu summary
+    const menuData = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    const menuSummary = createMenuSummary(menuData);
+    sendMenuSummaryEmail(menuSummary, qrCode);
   }
 }
 
@@ -68,6 +71,83 @@ function generateAllQRCodes() {
 function generateQRCode(url) {
   const qrSize = '200x200';
   return `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}&chl=${encodeURIComponent(url)}`;
+}
+
+// Create menu summary by category
+function createMenuSummary(menuData) {
+  const categories = {};
+  
+  menuData.forEach(row => {
+    const [name, description, price, category] = row;
+    if (!categories[category]) {
+      categories[category] = [];
+    }
+    categories[category].push({ name, description, price });
+  });
+  
+  return categories;
+}
+
+// Send menu summary email
+function sendMenuSummaryEmail(menuSummary, qrCode) {
+  const recipient = Session.getActiveUser().getEmail();
+  let categoriesHtml = '';
+  
+  for (const [category, items] of Object.entries(menuSummary)) {
+    categoriesHtml += `
+      <div style="margin: 20px 0;">
+        <h3>${category}</h3>
+        <ul>
+          ${items.map(item => `
+            <li>
+              <strong>${item.name}</strong> - $${item.price}<br>
+              <small>${item.description}</small>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
+  
+  const htmlBody = `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Menu Updated Successfully!</h2>
+        
+        <div style="margin: 20px 0;">
+          <h3>Menu Summary:</h3>
+          ${categoriesHtml}
+        </div>
+        
+        <div style="margin: 20px 0;">
+          <h3>QR Code for Your Digital Menu:</h3>
+          <img src="${qrCode}" alt="Menu QR Code" style="width: 200px; height: 200px;">
+        </div>
+        
+        <div style="margin: 20px 0;">
+          <p>You can print this QR code and display it in your restaurant.</p>
+          <p>Customers can scan it to view your digital menu.</p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
+          <p style="color: #666; font-size: 12px;">
+            This is an automated message from Digital Menu Maker.
+            Please do not reply to this email.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  GmailApp.sendEmail(
+    recipient,
+    CONFIG.EMAIL_SETTINGS.SUBJECT,
+    'Please view this email in HTML format.',
+    {
+      htmlBody: htmlBody,
+      name: CONFIG.EMAIL_SETTINGS.SENDER_NAME
+    }
+  );
 }
 
 // Main API endpoint
@@ -162,25 +242,10 @@ function onFormSubmit(e) {
   }
 }
 
-// Send email notification
+// Send email notification for new items
 function sendEmailNotification(menuItem, qrCode) {
   const recipient = Session.getActiveUser().getEmail();
-  const htmlBody = createEmailBody(menuItem, qrCode);
-  
-  GmailApp.sendEmail(
-    recipient,
-    CONFIG.EMAIL_SETTINGS.SUBJECT,
-    'Please view this email in HTML format.',
-    {
-      htmlBody: htmlBody,
-      name: CONFIG.EMAIL_SETTINGS.SENDER_NAME
-    }
-  );
-}
-
-// Create HTML email body
-function createEmailBody(menuItem, qrCode) {
-  return `
+  const htmlBody = `
     <html>
       <body style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>New Menu Item Added Successfully!</h2>
@@ -210,6 +275,16 @@ function createEmailBody(menuItem, qrCode) {
       </body>
     </html>
   `;
+  
+  GmailApp.sendEmail(
+    recipient,
+    CONFIG.EMAIL_SETTINGS.SUBJECT,
+    'Please view this email in HTML format.',
+    {
+      htmlBody: htmlBody,
+      name: CONFIG.EMAIL_SETTINGS.SENDER_NAME
+    }
+  );
 }
 
 // Handle changes to the sheet
@@ -280,21 +355,6 @@ function sendMenuUpdateEmail() {
       name: CONFIG.EMAIL_SETTINGS.SENDER_NAME
     }
   );
-}
-
-// Create menu summary by category
-function createMenuSummary(menuData) {
-  const categories = {};
-  
-  menuData.forEach(row => {
-    const [name, description, price, category] = row;
-    if (!categories[category]) {
-      categories[category] = [];
-    }
-    categories[category].push({ name, description, price });
-  });
-  
-  return categories;
 }
 
 // Create HTML email body
