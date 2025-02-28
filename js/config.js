@@ -1,12 +1,8 @@
 const CONFIG = {
     // Google Sheets configuration
-    SHEET_ID: '', // To be filled by user
-    API_KEY: '', // To be filled by user
+    SHEET_ID: '1ttJPKVBugC6DdwZRBv-jeZcZneLkeAZBH9G0zWELywA', // You'll add this after setting up Google Sheet
+    WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbzUiKzqFk-EeTcaXjo5BC-vVElBO7fdvfmeVzdK90OaXV9qo3FeudytzJ6BWQ7THVA/exec', // Add your Apps Script deployment URL here
     SHEET_NAME: 'Menu Items',
-    
-    // API endpoints
-    SHEETS_API_ENDPOINT: 'https://sheets.googleapis.com/v4/spreadsheets',
-    QR_CODE_API: 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=',
     
     // Menu categories
     CATEGORIES: ['Starter', 'Main', 'Dessert', 'Drinks'],
@@ -24,4 +20,4 @@ const CONFIG = {
         QR_CODE: 5,
         TIMESTAMP: 6
     }
-}; 
+};
