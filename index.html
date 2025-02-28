@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Menu</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Our Menu</h1>
+            <div class="restaurant-info">
+                <p class="last-updated">Last updated: <span id="last-updated-time"></span></p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="category-nav">
+        <ul id="category-list">
+            <!-- Categories will be populated dynamically -->
+        </ul>
+    </nav>
+
+    <main>
+        <div id="menu-container">
+            <!-- Menu items will be populated dynamically -->
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>Powered by Digital Menu Maker</p>
+            <p class="copyright">&copy; 2024 All Rights Reserved</p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>Loading menu...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/menu.js"></script>
+</body>
+</html> 

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Image Upload</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .upload-section {
+            border: 2px dashed #e74c3c;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            background-color: #fff5f5;
+        }
+
+        .upload-section.dragover {
+            background-color: #ffe5e5;
+            border-color: #c0392b;
+        }
+
+        #imageUpload {
+            display: none;
+        }
+
+        .preview-section {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .extracted-text {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .button {
+            background-color: #e74c3c;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #c0392b;
+        }
+
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #e74c3c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .menu-items {
+            margin-top: 2rem;
+        }
+
+        .menu-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .menu-item input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .menu-item select {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #e74c3c;
+            transition: width 0.3s ease;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Menu Image Upload</h1>
+        
+        <div class="upload-section" id="dropZone">
+            <p>Drag & Drop your menu image here</p>
+            <p>or</p>
+            <input type="file" id="imageUpload" accept="image/*">
+            <button class="button" onclick="document.getElementById('imageUpload').click()">
+                Choose File
+            </button>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <h2>Preview</h2>
+            <img id="previewImage" class="preview-image">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing image...</p>
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+                <p class="status-text" id="statusText">Initializing...</p>
+            </div>
+            <div class="extracted-text" id="extractedText"></div>
+            <div class="menu-items" id="menuItems"></div>
+            <button class="button" id="saveButton" onclick="saveMenuItems()" style="display: none;">
+                Save to Menu
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Tesseract
+        const worker = Tesseract.createWorker({
+            logger: progress => {
+                updateProgress(progress);
+            }
+        });
+
+        // Initialize worker
+        (async () => {
+            await worker.load();
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+        })();
+
+        function updateProgress(progress) {
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            
+            if (progress.status === 'recognizing text') {
+                const percentage = Math.round(progress.progress * 100);
+                progressBar.style.width = `${percentage}%`;
+                statusText.textContent = `Recognizing text: ${percentage}%`;
+            } else {
+                statusText.textContent = progress.status;
+            }
+        }
+
+        const dropZone = document.getElementById('dropZone');
+        const imageUpload = document.getElementById('imageUpload');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const loading = document.getElementById('loading');
+        const extractedText = document.getElementById('extractedText');
+        const menuItems = document.getElementById('menuItems');
+        const saveButton = document.getElementById('saveButton');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        imageUpload.addEventListener('change', handleFiles, false);
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files } });
+        }
+
+        function handleFiles(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewSection.style.display = 'block';
+                    loading.style.display = 'block';
+                    extractMenuItems(file);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function extractMenuItems(file) {
+            try {
+                loading.style.display = 'block';
+                
+                // Perform OCR
+                const result = await worker.recognize(file);
+                const text = result.data.text;
+                
+                // Parse the extracted text
+                const items = parseMenuText(text);
+                displayExtractedItems(items);
+                
+                // Show the raw text for verification
+                extractedText.textContent = text;
+            } catch (error) {
+                console.error('Error extracting menu items:', error);
+                extractedText.textContent = 'Error extracting menu items. Please try again.';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function parseMenuText(text) {
+            const lines = text.split('\n');
+            const items = [];
+            let currentCategory = 'Main';
+            
+            // Regular expressions for matching
+            const priceRegex = /\$?\d+\.?\d*/;
+            const categoryRegex = /^(Starter|Main|Dessert|Drinks|Appetizer|Entree)/i;
+            
+            lines.forEach((line, index) => {
+                // Skip empty lines
+                if (!line.trim()) return;
+                
+                // Check for category headers
+                const categoryMatch = line.match(categoryRegex);
+                if (categoryMatch) {
+                    currentCategory = categoryMatch[0];
+                    return;
+                }
+                
+                // Check for menu items with prices
+                const priceMatch = line.match(priceRegex);
+                if (priceMatch) {
+                    const name = line.substring(0, priceMatch.index).trim();
+                    const price = priceMatch[0];
+                    
+                    // Look for description in the next line
+                    const description = (index < lines.length - 1 && !lines[index + 1].match(priceRegex))
+                        ? lines[index + 1].trim()
+                        : '';
+                    
+                    // Determine category based on item name if no category header found
+                    let category = currentCategory;
+                    if (name.toLowerCase().includes('salad') || name.toLowerCase().includes('soup')) {
+                        category = 'Starter';
+                    } else if (name.toLowerCase().includes('cake') || name.toLowerCase().includes('ice cream')) {
+                        category = 'Dessert';
+                    } else if (name.toLowerCase().includes('coffee') || name.toLowerCase().includes('juice')) {
+                        category = 'Drinks';
+                    }
+                    
+                    items.push({
+                        name: name,
+                        description: description,
+                        price: price.replace('$', ''),
+                        category: category
+                    });
+                }
+            });
+            
+            return items;
+        }
+
+        function displayExtractedItems(items) {
+            menuItems.innerHTML = items.map((item, index) => `
+                <div class="menu-item">
+                    <input type="text" placeholder="Name" value="${item.name || ''}" id="name-${index}">
+                    <input type="text" placeholder="Description" value="${item.description || ''}" id="desc-${index}">
+                    <input type="number" step="0.01" placeholder="Price" value="${item.price || ''}" id="price-${index}">
+                    <select id="category-${index}">
+                        <option value="Starter">Starter</option>
+                        <option value="Main">Main</option>
+                        <option value="Dessert">Dessert</option>
+                        <option value="Drinks">Drinks</option>
+                    </select>
+                </div>
+            `).join('');
+            
+            saveButton.style.display = 'block';
+        }
+
+        async function saveMenuItems() {
+            const items = [];
+            const itemElements = menuItems.getElementsByClassName('menu-item');
+            
+            Array.from(itemElements).forEach((element, index) => {
+                items.push({
+                    name: document.getElementById(`name-${index}`).value,
+                    description: document.getElementById(`desc-${index}`).value,
+                    price: document.getElementById(`price-${index}`).value,
+                    category: document.getElementById(`category-${index}`).value
+                });
+            });
+
+            // Save to Google Sheet
+            google.script.run
+                .withSuccessHandler(() => {
+                    alert('Menu items saved successfully!');
+                    window.location.reload();
+                })
+                .withFailureHandler(error => {
+                    console.error('Error saving menu items:', error);
+                    alert('Error saving menu items. Please try again.');
+                })
+                .saveMenuItems(items);
+        }
+
+        // Cleanup worker when page is closed
+        window.addEventListener('beforeunload', () => {
+            worker.terminate();
+        });
+    </script>
+</body>
+</html> 
