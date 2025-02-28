@@ -1,7 +1,7 @@
 const CONFIG = {
     // Google Sheets configuration
-    SHEET_ID: '', // You'll add this after setting up Google Sheet
-    WEBAPP_URL: '', // Add your Apps Script deployment URL here
+    SHEET_ID: '1ttJPKVBugC6DdwZRBv-jeZcZneLkeAZBH9G0zWELywA', // Replace with your actual Sheet ID
+    WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxP1PriPiq5D1xdcoWhoASOJtmtk33_dD2Ofd5e1JR4QKf3391d1KURBaT0SobBZho/exec', // Replace with your actual Web App URL
     SHEET_NAME: 'Menu Items',
     
     // Menu categories
